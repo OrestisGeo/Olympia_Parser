@@ -1,0 +1,84 @@
+.vscode/
+*.mxproject
+*.code-workspace
+*.patch
+*.jflash
+
+# IAR Settings  
+EWARM/settings/
+Project/settings/
+
+# IAR Debug Exe  
+**/Exe/
+**/List/
+**/Obj/
+**/**/Exe/
+**/**/List/
+**/**/Obj/
+debug/
+
+# IAR Debug Obj   
+*.dep
+*.pbw
+*.ewd
+
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+# Object files
+*.ko
+*.obj
+*.elf
+*.slo
+*.lo
+*.o
+*.lst
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+*.lo
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Linker output
+*.ilk
+*.map
+*.exp
+*.log
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
