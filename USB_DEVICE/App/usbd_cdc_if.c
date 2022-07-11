@@ -49,6 +49,13 @@
   */
 
 /* USER CODE BEGIN PRIVATE_TYPES */
+typedef struct
+{
+  uint8_t *data;    //Will point to the buffer  
+  int wr_index;           //write index
+  int rd_index;           //read index
+  int lb_index;           //loopback index
+} VCP_FIFO;
 
 /* USER CODE END PRIVATE_TYPES */
 
@@ -62,6 +69,9 @@
   */
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
+
+#define RX_BUFFER_MAX_WRITE_INDEX (APP_RX_DATA_SIZE - CDC_DATA_FS_MAX_PACKET_SIZE)    //the limit index after which the circular buffer will loopback
+
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -94,6 +104,10 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
+//Circular FIFO to store outgoing data until is can be sent over USB
+VCP_FIFO vcp_tx_fifo;
+//Circular FIFO to store incoming data until is can be sent over USB
+VCP_FIFO vcp_rx_fifo;
 
 /* USER CODE END PRIVATE_VARIABLES */
 
@@ -150,6 +164,17 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
+  //Circular FIFO initializations :
+  vcp_tx_fifo.data = UserTxBufferFS;     //Use the default buffer
+  vcp_tx_fifo.wr_index   = 0;
+  vcp_tx_fifo.rd_index   = 0;
+  vcp_tx_fifo.lb_index   = 0;
+
+  vcp_rx_fifo.data = UserRxBufferFS;    //Use the default buffer
+  vcp_rx_fifo.wr_index   = 0;
+  vcp_rx_fifo.rd_index   = 0;
+  vcp_rx_fifo.lb_index   = 0;
+
   /* Set Application Buffers */
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
@@ -259,7 +284,16 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
+  vcp_rx_fifo.wr_index += *Len;
+  // If the new value is too close to the end of the ring buffer
+  if(vcp_rx_fifo.wr_index >= RX_BUFFER_MAX_WRITE_INDEX)
+  {
+    //Wrap around buffer and save wr on lb
+    vcp_rx_fifo.lb_index = vcp_rx_fifo.wr_index;
+    vcp_rx_fifo.wr_index = 0;
+  }
+  //Where(on the rx ring buffer) to write the received data
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, vcp_rx_fifo.data + vcp_rx_fifo.wr_index);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -291,7 +325,10 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+int vcp_receive_data(uint8_t* Buf, uint32_t len)
+{
 
+}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**
