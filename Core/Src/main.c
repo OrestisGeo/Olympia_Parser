@@ -23,6 +23,7 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "mdl_usb.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -96,6 +97,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART4_UART_Init();
   MX_USB_DEVICE_Init();
+  // Mdl_Usb_CDC_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -105,7 +107,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+    Mdl_Usb_CDC_Update();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

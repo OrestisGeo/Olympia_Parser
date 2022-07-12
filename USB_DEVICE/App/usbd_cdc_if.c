@@ -324,10 +324,71 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   return result;
 }
 
-/* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
-int vcp_receive_data(uint8_t* Buf, uint32_t len)
-{
 
+
+
+/* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+int vcp_receive_data(uint8_t* buf, uint32_t len)
+{
+  // Compute how much data is in the FIFO
+  int cap = vcp_rx_fifo.wr_index - vcp_rx_fifo.rd_index;
+  if (cap == 0)
+    return 0;      // Empty FIFO, no data to read
+  if (cap < 0)  // FIFO contents wrap around
+    cap += vcp_rx_fifo.lb_index;  // Notice the use of lb
+  // Limit the FIFO read to the available data
+  if (len > cap)
+    len = cap;
+  // Save len : it'll be the return value
+  int retval = len;
+  // Read the data
+  while (len)
+  {
+    len--;
+    *buf = vcp_rx_fifo.data[vcp_rx_fifo.rd_index];
+    buf++;
+    vcp_rx_fifo.rd_index++;    // Update read index
+    if (vcp_rx_fifo.rd_index == vcp_rx_fifo.lb_index)  // Check for wrap-around
+      vcp_rx_fifo.rd_index = 0;      // Follow wrap-around
+  }
+  return retval;
+}
+
+
+int vcp_send (uint8_t* buf, uint16_t len)
+{
+  // Step 1 : calculate the occupied space in the Tx FIFO
+  int cap = vcp_tx_fifo.wr_index - vcp_tx_fifo.rd_index;   // occupied capacity
+  if (cap < 0)    // FIFO contents wrap around
+    cap += APP_TX_DATA_SIZE;
+  cap = APP_TX_DATA_SIZE - cap;      // available capacity
+
+  // Step 2 : compare with argument
+  if (cap < len)
+    return -1;   // Not enough room to copy "buf" into the FIFO => error
+
+  // Step 3 : does buf fit in the tail ?
+  int tail = APP_TX_DATA_SIZE - vcp_tx_fifo.wr_index;
+  if (tail >= len)
+  {
+    // Copy buf into the tail of the FIFO
+    memcpy (&vcp_tx_fifo.data[vcp_tx_fifo.wr_index], buf, len);
+    // Update "wr" index
+    vcp_tx_fifo.wr_index += len;
+    // In case "len" == "tail", next write goes to the head
+    if (vcp_tx_fifo.wr_index == APP_TX_DATA_SIZE)
+      vcp_tx_fifo.wr_index = 0;   
+  }
+  else
+  {
+    // Copy the head of "buf" to the tail of the FIFO
+    memcpy (&vcp_tx_fifo.data[vcp_tx_fifo.wr_index], buf, tail);
+    // Copy the tail of "buf" to the head of the FIFO :
+    memcpy (vcp_tx_fifo.data, &buf[tail], len - tail);
+    // Update the "wr" index
+    vcp_tx_fifo.wr_index = len - tail;
+  }
+  return 0;  // successful completion
 }
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
