@@ -26,12 +26,16 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "mdl_usb.h"
+#include "comm_usb.h"
+#include "string.h"
+#include "stdbool.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+uint8_t tx_buffer[200] = "Hello World";
+static bool packet_sent;
+static uint8_t send_packet;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -97,7 +101,10 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART4_UART_Init();
   MX_USB_DEVICE_Init();
+  COMM_USB_Init();
+
   /* USER CODE BEGIN 2 */
+  
 
   /* USER CODE END 2 */
 
@@ -106,7 +113,11 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    Mdl_USB_Update();
+    if (send_packet==1)
+    {
+      send_packet = 0;
+      packet_sent = COMM_USB_send_packet(tx_buffer, strlen((char *)tx_buffer));
+    }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
