@@ -40,7 +40,7 @@ static uint8_t send_packet;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define _DEBUG 
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -104,7 +104,12 @@ int main(void)
   COMM_USB_Init();
 
   /* USER CODE BEGIN 2 */
-  
+  #ifdef _DEBUG
+  RCC->APB2ENR |= RCC_APB2ENR_DBGMCUEN; // enable MCU debug module clock
+  HAL_DBGMCU_EnableDBGStandbyMode();
+  HAL_DBGMCU_EnableDBGStopMode();
+  DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM3_STOP; // enable timer 3 stop
+  #endif
 
   /* USER CODE END 2 */
 
