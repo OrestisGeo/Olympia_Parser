@@ -1,9 +1,9 @@
-
 #include "comm_usb.h"
 #include "stdint.h"
 #include "stdbool.h"
 #include "usbd_cdc_if.h"
 #include "stm32f0xx_hal_tim.h"
+#include "stm32f0xx_ll_tim.h"
 
 #define _RX_BUFFER_SIZE (500)
 #define _COMM_USB_PACKET_TIMEOUT_US (500)     //us
@@ -14,6 +14,7 @@
 
 static TIM_HandleTypeDef htim3;
 static TIM_MasterConfigTypeDef sMasterConfig = {0};
+LL_TIM_InitTypeDef TIM_InitStruct = {0};
 
 int8_t vcp_rx_bfr[_RX_BUFFER_SIZE];
 static uint32_t message_length;
@@ -21,35 +22,48 @@ static bool message_received_flag;
 
 // static uint32_t vcp_received_packet_length;
 // static uint8_t packet_received;
-static uint32_t counter;
+//static uint32_t counter;
 
 void COMM_USB_last_packet_is_64_bytes(void);
 
 void COMM_USB_Init()
 {
-    /* Initialize TIM3 peripheral 
-        Prescaler = 480000000 / 48 = 1MHz timer counter clock
-        Period = XXX us (1/1000000 = 1us each timer clock cycle)
-    */
-    htim3.Instance = TIM3;
-    htim3.Init.Prescaler = 65500;                          // TIM3 clock = 1MHz (APB1 = 48 Mhz)
-    htim3.Init.Period = _COMM_USB_PACKET_TIMEOUT_US;        // timeout at 0.5ms
-    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    // /* Initialize TIM3 peripheral 
+    //     Prescaler = 480000000 / 48 = 1MHz timer counter clock
+    //     Period = XXX us (1/1000000 = 1us each timer clock cycle)
+    // */
+    // htim3.Instance = TIM3;
+    // htim3.Init.Prescaler = 65500;                          // TIM3 clock = 1MHz (APB1 = 48 Mhz)
+    // htim3.Init.Period = _COMM_USB_PACKET_TIMEOUT_US;        // timeout at 0.5ms
+    // htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    // htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+    // htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     
-    /* Enable TIM3 clock (Enable the Low Speed APB (APB1) peripheral clock.)*/
-    __HAL_RCC_TIM3_CLK_ENABLE();
-    HAL_TIM_Base_Init(&htim3);     //inits timer too?
+    // /* Enable TIM3 clock (Enable the Low Speed APB (APB1) peripheral clock.)*/
+    // __HAL_RCC_TIM3_CLK_ENABLE();
+    // HAL_TIM_Base_Init(&htim3);     //inits timer too?
+
+
+
+    /* USER CODE END TIM3_Init 1 */
+    TIM_InitStruct.Prescaler = 48;
+    TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
+    TIM_InitStruct.Autoreload = 500;
+    TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
+    LL_TIM_Init(TIM3, &TIM_InitStruct);
+    LL_TIM_DisableARRPreload(TIM3);
+    LL_TIM_SetClockSource(TIM3, LL_TIM_CLOCKSOURCE_INTERNAL);
+    LL_TIM_SetTriggerOutput(TIM3, LL_TIM_TRGO_RESET);
+    LL_TIM_DisableMasterSlaveMode(TIM3);
 
     /*Configure the TIM3 IRQ priority */
     HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
     /* Enable the TIM3 global Interrupt */
     HAL_NVIC_EnableIRQ(TIM3_IRQn);
     
-    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig);
+    // sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    // sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    // HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig);
 
     // if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
     // {
